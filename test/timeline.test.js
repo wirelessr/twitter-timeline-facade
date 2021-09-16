@@ -149,7 +149,7 @@ describe("timeline.mock.follower.testsuite", () => {
 });
 
 describe("timeline.testsuite", () => {
-  it("timeline.process.normal", () => {
+  it("timeline.process.normal", async () => {
     const recommendationRepo = new MockRecommendationRepo();
     const followerRepo = new MockFollowerRepo(
       {
@@ -175,25 +175,25 @@ describe("timeline.testsuite", () => {
     // post(userId, postId)
     // celebrity
     const postId1 = faker.datatype.uuid();
-    timeline.post(1, postId1);
+    await timeline.post(1, postId1);
     expect(recommendationRepo.db.post[1]).to.deep.equal([postId1]);
-    expect(timeline.retrieve(2)).to.deep.equal([postId1]);
+    expect(await timeline.retrieve(2)).to.deep.equal([postId1]);
 
     // normal user
     const postId2 = faker.datatype.uuid();
-    timeline.post(2, postId2);
+    await timeline.post(2, postId2);
     expect(recommendationRepo.db.post[2]).to.be.undefined;
     expect(recommendationRepo.db.recommendation[5]).to.deep.equal([postId2]);
-    expect(timeline.retrieve(5)).to.deep.equal([postId2]);
+    expect(await timeline.retrieve(5)).to.deep.equal([postId2]);
 
     // inactive user
     const postId3 = faker.datatype.uuid();
-    timeline.post(3, postId3);
+    await timeline.post(3, postId3);
     expect(recommendationRepo.db.post[3]).to.be.undefined;
     expect(recommendationRepo.db.recommendation[6]).to.be.undefined;
   });
 
-  it("timeline.retrieve.assemble.result", () => {
+  it("timeline.retrieve.assemble.result", async () => {
     const recommendationRepo = new MockRecommendationRepo();
     const followerRepo = new MockFollowerRepo(
       {
@@ -215,11 +215,11 @@ describe("timeline.testsuite", () => {
     );
 
     const postId1 = faker.datatype.uuid();
-    timeline.post(1, postId1);
+    await timeline.post(1, postId1);
     const postId2 = faker.datatype.uuid();
-    timeline.post(2, postId2);
+    await timeline.post(2, postId2);
 
-    const result = timeline.retrieve(3);
+    const result = await timeline.retrieve(3);
     expect(result).to.have.members([postId1, postId2]);
     expect(result).to.be.length(2);
   });
