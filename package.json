@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/*",
-    "coverage": "nyc --reporter=lcov npm test"
+    "test": "mocha test/* --no-timeouts --exit",
+    "coverage": "nyc --reporter=text --reporter=lcov npm test"
   },
   "repository": {
     "type": "git",
@@ -27,5 +27,8 @@
     "faker": "^5.5.3",
     "mocha": "^9.1.1",
     "nyc": "^15.1.0"
+  },
+  "dependencies": {
+    "ioredis": "^4.27.9"
   }
 }
