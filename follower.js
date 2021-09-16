@@ -50,6 +50,25 @@ class FollowerRepo {
     const now = Date.now();
     return Math.floor((now - lastLoginTime) / 1000 / 86400);
   }
+  async listLastLoginDays(userIds) {
+    const pipeline = this.#redis.pipeline();
+    const idLastLoginTimeMap = new Map();
+    const now = Date.now();
+
+    for (const userId of userIds) {
+      const key = this.#lastLoginKey(userId);
+      pipeline.get(key);
+    }
+    const results = await pipeline.exec();
+    for (let i = 0; i < userIds.length; i++) {
+      const lastLoginTime = results[i][1] ?? 0;
+      idLastLoginTimeMap.set(
+        userIds[i],
+        Math.floor((now - lastLoginTime) / 1000 / 86400)
+      );
+    }
+    return idLastLoginTimeMap;
+  }
   async getFollowees(userId) {
     const key = this.#followeeKey(userId);
     const followees = await this.#redis.smembers(key);

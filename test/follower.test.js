@@ -78,7 +78,7 @@ describe("timeline.repo.follower.testsuite", () => {
     expect(cnt3).to.be.equal(0);
   });
 
-  it("timeline.repo.follower.last.login.normal", async () => {
+  it("timeline.repo.follower.last.login.list", async () => {
     const now = Date.now();
 
     await this.redis.set("timeline.last.login.1", now);
@@ -86,19 +86,11 @@ describe("timeline.repo.follower.testsuite", () => {
     await this.redis.set("timeline.last.login.3", now + 86400 * 1000 * 1.5);
     await this.redis.set("timeline.last.login.4", now - 100);
 
-    const r1 = await this.repo.getLastLoginDays(1);
-    expect(r1).to.be.equal(0);
-
-    const r2 = await this.repo.getLastLoginDays(2);
-    expect(r2).to.be.equal(1);
-
-    const r3 = await this.repo.getLastLoginDays(3);
-    expect(r3).to.be.equal(-2);
-
-    const r4 = await this.repo.getLastLoginDays(4);
-    expect(r4).to.be.equal(0);
-
-    const r5 = await this.repo.getLastLoginDays(5);
-    expect(r5).to.be.greaterThan(999);
+    const rMap = await this.repo.listLastLoginDays([1, 2, 3, 4, 5]);
+    expect(rMap.get(1)).to.be.equal(0);
+    expect(rMap.get(2)).to.be.equal(1);
+    expect(rMap.get(3)).to.be.equal(-2);
+    expect(rMap.get(4)).to.be.equal(0);
+    expect(rMap.get(5)).to.be.greaterThan(999);
   });
 });

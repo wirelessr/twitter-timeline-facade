@@ -97,11 +97,16 @@ class MockFollowerRepo {
     }
     return this.db.follower[userId] ?? [];
   }
-  getLastLoginDays(follower) {
-    if (!this.db.lastLogin) {
-      return 999;
+  listLastLoginDays(userIds) {
+    const idDays = new Map();
+    for (const userId of userIds) {
+      if (!this.db.lastLogin) {
+        idDays.set(userId, 999);
+      } else {
+        idDays.set(userId, this.db.lastLogin[userId] ?? 999);
+      }
     }
-    return this.db.lastLogin[follower] ?? 999;
+    return idDays;
   }
   getFollowees(userId) {
     if (!this.db.followee) {
@@ -142,9 +147,10 @@ describe("timeline.mock.follower.testsuite", () => {
       1: 7,
       2: 99
     });
-    expect(mockRepo.getLastLoginDays(1)).to.be.equal(7);
-    expect(mockRepo.getLastLoginDays(2)).to.be.equal(99);
-    expect(mockRepo.getLastLoginDays(3)).to.be.equal(999);
+    const rMap = mockRepo.listLastLoginDays([1, 2, 3]);
+    expect(rMap.get(1)).to.be.equal(7);
+    expect(rMap.get(2)).to.be.equal(99);
+    expect(rMap.get(3)).to.be.equal(999);
   });
 });
 
