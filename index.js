@@ -43,16 +43,18 @@ class TwitterTimelineFacade {
     return false;
   }
 
-  async #isInactiveUser(userId) {
-    const lastLoginDays = await this.followerRepo.getLastLoginDays(userId);
+  #isInactiveUser(lastLoginDays) {
     return lastLoginDays > this.#INACTIVE_DAY_THRESHOLD;
   }
 
   async #getFollowers(userId) {
     const followers = await this.followerRepo.getFollowers(userId);
+    const followerLoginMap = await this.followerRepo.listLastLoginDays(
+      followers
+    );
     const ret = [];
-    for (const follower of followers) {
-      if (!(await this.#isInactiveUser(follower))) {
+    for (const [follower, lastLoginDays] of followerLoginMap.entries()) {
+      if (!this.#isInactiveUser(lastLoginDays)) {
         ret.push(follower);
       }
     }
