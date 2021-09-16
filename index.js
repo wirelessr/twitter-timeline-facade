@@ -1,4 +1,4 @@
-"use strict"
+"use strict";
 
 function shuffle(array) {
   let currentIndex = array.length,
@@ -35,35 +35,38 @@ class TwitterTimelineFacade {
     this.followerRepo = followerRepo;
   }
 
-  #isCelebrity(userId) {
-    const followerCount = this.followerRepo.countFollowers(userId);
+  async #isCelebrity(userId) {
+    const followerCount = await this.followerRepo.countFollowers(userId);
     if (followerCount > this.#CELEBRITY_FOLLOWER_THRESHOLD) {
       return true;
     }
     return false;
   }
 
-  #isInactiveUser(userId) {
-    return (
-      this.followerRepo.getLastLoginDays(userId) > this.#INACTIVE_DAY_THRESHOLD
-    );
+  async #isInactiveUser(userId) {
+    const lastLoginDays = await this.followerRepo.getLastLoginDays(userId);
+    return lastLoginDays > this.#INACTIVE_DAY_THRESHOLD;
   }
 
-  #getFollowers(userId) {
-    const followers = this.followerRepo.getFollowers(userId);
-    return followers.filter((follower) => {
-      return !this.#isInactiveUser(follower);
-    });
+  async #getFollowers(userId) {
+    const followers = await this.followerRepo.getFollowers(userId);
+    const ret = [];
+    for (const follower of followers) {
+      if (!(await this.#isInactiveUser(follower))) {
+        ret.push(follower);
+      }
+    }
+    return ret;
   }
 
   #assembleTimeline(fromOwned, fromCelebrities) {
     return shuffle(fromOwned.concat(fromCelebrities));
   }
 
-  post(authorId, postId, postMeta) {
-    if (this.#isCelebrity(authorId)) {
+  async post(authorId, postId, postMeta) {
+    if (await this.#isCelebrity(authorId)) {
       // single update
-      this.recommendationRepo.appendPost(
+      await this.recommendationRepo.appendPost(
         authorId,
         postId,
         postMeta,
@@ -71,25 +74,29 @@ class TwitterTimelineFacade {
       );
     } else {
       // fan-out
-      const followers = this.#getFollowers(authorId);
-      followers.forEach((follower) =>
-        this.recommendationRepo.appendRecommendation(
-          follower,
-          postId,
-          postMeta,
-          this.#MAX_RECOMMEND_LENGTH
-        )
+      const followers = await this.#getFollowers(authorId);
+      followers.forEach(
+        async (follower) =>
+          await this.recommendationRepo.appendRecommendation(
+            follower,
+            postId,
+            postMeta,
+            this.#MAX_RECOMMEND_LENGTH
+          )
       );
     }
   }
 
-  retrieve(userId) {
-    const followees = this.followerRepo.getFollowees(userId);
-    const celebrities = followees.filter((followee) => {
-      return this.#isCelebrity(followee);
-    });
-    const fromOwned = this.recommendationRepo.getRecommendations(userId);
-    const fromCelebrities = this.recommendationRepo.getPosts(celebrities);
+  async retrieve(userId) {
+    const followees = await this.followerRepo.getFollowees(userId);
+    const celebrities = [];
+    for (const followee of followees) {
+      if (await this.#isCelebrity(followee)) {
+        celebrities.push(followee);
+      }
+    }
+    const fromOwned = await this.recommendationRepo.getRecommendations(userId);
+    const fromCelebrities = await this.recommendationRepo.getPosts(celebrities);
     return this.#assembleTimeline(fromOwned, fromCelebrities);
   }
 }
