@@ -44,12 +44,6 @@ class FollowerRepo {
     const followers = await this.#redis.smembers(key);
     return followers;
   }
-  async getLastLoginDays(follower) {
-    const key = this.#lastLoginKey(follower);
-    const lastLoginTime = await this.#redis.get(key);
-    const now = Date.now();
-    return Math.floor((now - lastLoginTime) / 1000 / 86400);
-  }
   async listLastLoginDays(userIds) {
     const pipeline = this.#redis.pipeline();
     const idLastLoginTimeMap = new Map();
