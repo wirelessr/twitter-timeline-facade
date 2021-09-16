@@ -14,9 +14,9 @@ class TimelineError extends Error {
     }
   }
 }
-class RecommendationPostError extends TimelineError {}
+class RecommendationError extends TimelineError {}
 
 module.exports = {
   TimelineError,
-  RecommendationPostError
+  RecommendationError
 };

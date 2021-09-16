@@ -1,16 +1,19 @@
 "use strict";
 
 const Redis = require("ioredis");
-const { RecommendationPostError } = require("./error");
+const { RecommendationError } = require("./error");
 
+/*
+  Assume all posts and recommendations are stored into Redis with the data type: list 
+*/
 class RecommendationRepo {
   #POST_KEY_PREFIX;
   #RECOMMENDATION_KEY_PREFIX;
   #redis;
 
   constructor(conf) {
-    this.#POST_KEY_PREFIX = `timeline.post.`;
-    this.#RECOMMENDATION_KEY_PREFIX = `timeline.recommendation.`;
+    this.#POST_KEY_PREFIX = "timeline.post.";
+    this.#RECOMMENDATION_KEY_PREFIX = "timeline.recommendation.";
     let redis;
     if (!conf) {
       redis = new Redis();
@@ -42,7 +45,7 @@ class RecommendationRepo {
       .exec();
     for (const [err, result] of results) {
       if (err) {
-        throw new RecommendationPostError("appendData failed");
+        throw new RecommendationError("appendData failed");
       }
     }
   }
