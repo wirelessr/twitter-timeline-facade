@@ -93,4 +93,35 @@ describe("timeline.repo.recommendation.testsuite", () => {
       { postId: postId3, postMeta: {} }
     ]);
   });
+
+  it("timeline.repo.recommendation.delete.normal", async () => {
+    const postId1 = faker.datatype.uuid();
+    const postId2 = faker.datatype.uuid();
+    const postId3 = faker.datatype.uuid();
+    const postId4 = faker.datatype.uuid();
+
+    await this.repo.appendRecommendation(1, postId1, {}, 2);
+    await this.repo.appendRecommendation(2, postId2, {}, 2);
+    await this.repo.appendPost(3, postId3, {}, 2);
+    await this.repo.appendPost(3, postId4, {}, 2);
+
+    // delete non-exist data
+    await this.repo.deletePost(3, postId1);
+    await this.repo.deleteRecommendation(1, postId4);
+    expect(await this.repo.getRecommendations(1)).to.deep.equal([
+      { postId: postId1, postMeta: {} }
+    ]);
+    expect(await this.repo.getPosts([3])).to.deep.equal([
+      { postId: postId3, postMeta: {} },
+      { postId: postId4, postMeta: {} }
+    ]);
+
+    // delete one
+    await this.repo.deletePost(3, postId3);
+    await this.repo.deleteRecommendation(1, postId1);
+    expect(await this.repo.getRecommendations(1)).to.deep.equal([]);
+    expect(await this.repo.getPosts([3])).to.deep.equal([
+      { postId: postId4, postMeta: {} }
+    ]);
+  });
 });
