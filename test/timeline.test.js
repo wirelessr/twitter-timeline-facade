@@ -34,6 +34,22 @@ class MockRecommendationRepo {
     }
     return ret;
   }
+  deletePost(userId, postId) {
+    if (userId in this.db.post && this.db.post[userId]) {
+      this.db.post[userId] = this.db.post[userId].filter((item) => {
+        return item !== postId;
+      });
+    }
+  }
+  deleteRecommendation(userId, postId) {
+    if (userId in this.db.recommendation && this.db.recommendation[userId]) {
+      this.db.recommendation[userId] = this.db.recommendation[userId].filter(
+        (item) => {
+          return item !== postId;
+        }
+      );
+    }
+  }
 }
 
 describe("timeline.mock.recommendation.testsuite", () => {
@@ -74,6 +90,31 @@ describe("timeline.mock.recommendation.testsuite", () => {
 
     const result2 = mockRepo.getRecommendations(4);
     expect(result2).to.deep.equal([]);
+  });
+  it("timeline.mock.recommendation.delete.post.normal", () => {
+    const mockRepo = new MockRecommendationRepo();
+    // create
+    mockRepo.appendPost(1, 1, {}, 100);
+    mockRepo.appendPost(2, 2, {}, 100);
+    mockRepo.appendPost(2, 3, {}, 100);
+    // delete
+    mockRepo.deletePost(1, 1);
+    mockRepo.deletePost(2, 2);
+    // verification
+    expect(mockRepo.getPosts([1, 2])).to.deep.equal([3]);
+  });
+  it("timeline.mock.recommendation.delete.recommendation.normal", () => {
+    const mockRepo = new MockRecommendationRepo();
+    // create
+    mockRepo.appendRecommendation(1, 1, {}, 100);
+    mockRepo.appendRecommendation(2, 2, {}, 100);
+    mockRepo.appendRecommendation(2, 3, {}, 100);
+    // delete
+    mockRepo.deleteRecommendation(1, 1);
+    mockRepo.deleteRecommendation(2, 2);
+    // verification
+    expect(mockRepo.getRecommendations(1)).to.deep.equal([]);
+    expect(mockRepo.getRecommendations(2)).to.deep.equal([3]);
   });
 });
 
@@ -228,5 +269,51 @@ describe("timeline.testsuite", () => {
     const result = await timeline.retrieve(3);
     expect(result).to.have.members([postId1, postId2]);
     expect(result).to.be.length(2);
+  });
+
+  it("timeline.delete.post.normal", async () => {
+    const recommendationRepo = new MockRecommendationRepo();
+    const followerRepo = new MockFollowerRepo(
+      {
+        1: [2, 3, 4],
+        2: [5],
+        3: [6]
+      },
+      {
+        2: [1],
+        5: [2],
+        6: [3]
+      },
+      { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 }
+    );
+    const conf = {
+      CelebrityFollowerThreshold: 1
+    };
+    const timeline = new TwitterTimelineFacade(
+      recommendationRepo,
+      followerRepo,
+      conf
+    );
+
+    // post(userId, postId)
+    // celebrity
+    const postId1 = faker.datatype.uuid();
+    await timeline.post(1, postId1);
+
+    // normal user
+    const postId2 = faker.datatype.uuid();
+    await timeline.post(2, postId2);
+    const postId3 = faker.datatype.uuid();
+    await timeline.post(3, postId3);
+
+    await timeline.deletePost(1, postId1);
+    await timeline.deletePost(2, postId2);
+    // user6 become inactive user
+    followerRepo.db.lastLogin[6] = 99;
+    await timeline.deletePost(3, postId3);
+
+    expect(await timeline.retrieve(2)).to.deep.equal([]);
+    expect(await timeline.retrieve(5)).to.deep.equal([]);
+    expect(await timeline.retrieve(6)).to.deep.equal([]);
   });
 });
