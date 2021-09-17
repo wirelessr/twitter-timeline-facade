@@ -17,11 +17,14 @@ before(() => {
   });
 });
 
-after(() => {
-  this.redis.disconnect();
+after(async () => {
+  await this.redis.disconnect();
 });
 
 describe("timeline.repo.recommendation.testsuite", () => {
+  beforeEach(() => {
+    this.cmp = (a, b) => (a.postId > b.postId ? 1 : -1);
+  });
   afterEach(async () => {
     await this.redis.flushdb();
   });
@@ -47,14 +50,14 @@ describe("timeline.repo.recommendation.testsuite", () => {
     const postId2 = faker.datatype.uuid();
     const postId3 = faker.datatype.uuid();
 
-    await this.repo.appendPost(1, postId1, {}, 2);
-    await this.repo.appendPost(1, postId2, {}, 2);
-    await this.repo.appendPost(1, postId3, {}, 2);
+    await this.repo.appendPost(1, postId1, { created: 1 }, 2);
+    await this.repo.appendPost(1, postId2, { created: 2 }, 2);
+    await this.repo.appendPost(1, postId3, { created: 3 }, 2);
 
     const posts = await this.repo.getPosts([1]);
     expect(posts).to.deep.equal([
-      { postId: postId2, postMeta: {} },
-      { postId: postId3, postMeta: {} }
+      { postId: postId2, postMeta: { created: 2 } },
+      { postId: postId3, postMeta: { created: 3 } }
     ]);
   });
 
@@ -88,9 +91,44 @@ describe("timeline.repo.recommendation.testsuite", () => {
     expect(r1).to.deep.equal([{ postId: postId1, postMeta: {} }]);
 
     const r2 = await this.repo.getRecommendations(2);
-    expect(r2).to.deep.equal([
-      { postId: postId2, postMeta: {} },
-      { postId: postId3, postMeta: {} }
+    expect(r2.sort(this.cmp)).to.deep.equal(
+      [
+        { postId: postId2, postMeta: {} },
+        { postId: postId3, postMeta: {} }
+      ].sort(this.cmp)
+    );
+  });
+
+  it("timeline.repo.recommendation.delete.normal", async () => {
+    const postId1 = faker.datatype.uuid();
+    const postId2 = faker.datatype.uuid();
+    const postId3 = faker.datatype.uuid();
+    const postId4 = faker.datatype.uuid();
+
+    await this.repo.appendRecommendation(1, postId1, {}, 2);
+    await this.repo.appendRecommendation(2, postId2, {}, 2);
+    await this.repo.appendPost(3, postId3, {}, 2);
+    await this.repo.appendPost(3, postId4, {}, 2);
+
+    // delete non-exist data
+    await this.repo.deletePost(3, postId1);
+    await this.repo.deleteRecommendation(1, postId4);
+    expect(await this.repo.getRecommendations(1)).to.deep.equal([
+      { postId: postId1, postMeta: {} }
+    ]);
+    expect((await this.repo.getPosts([3])).sort(this.cmp)).to.deep.equal(
+      [
+        { postId: postId3, postMeta: {} },
+        { postId: postId4, postMeta: {} }
+      ].sort(this.cmp)
+    );
+
+    // delete one
+    await this.repo.deletePost(3, postId3);
+    await this.repo.deleteRecommendation(1, postId1);
+    expect(await this.repo.getRecommendations(1)).to.deep.equal([]);
+    expect(await this.repo.getPosts([3])).to.deep.equal([
+      { postId: postId4, postMeta: {} }
     ]);
   });
 });

@@ -26,8 +26,8 @@ before(() => {
   });
 });
 
-after(() => {
-  this.redis.disconnect();
+after(async () => {
+  await this.redis.disconnect();
 });
 
 describe("timeline.integration.testsuite", () => {
@@ -91,6 +91,17 @@ describe("timeline.integration.testsuite", () => {
     ]);
     expect(await this.timeline.retrieve(user4)).to.deep.equal([]);
     expect(await this.timeline.retrieve(user5)).to.deep.equal([]);
+
+    // delete posts
+    await this.timeline.deletePost(user1, "post1");
+    await this.timeline.deletePost(user4, "post4");
+
+    // verification
+    expect(await this.timeline.retrieve(user1)).to.deep.equal([
+      { postId: "post5", postMeta: {} }
+    ]);
+    expect(await this.timeline.retrieve(user2)).to.deep.equal([]);
+    expect(await this.timeline.retrieve(user3)).to.deep.equal([]);
   });
 
   it("timeline.integration.inactive.user", async () => {
