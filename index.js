@@ -47,7 +47,7 @@ class TwitterTimelineFacade {
     return lastLoginDays > this.#INACTIVE_DAY_THRESHOLD;
   }
 
-  async #getFollowers(userId) {
+  async #getActiveFollowers(userId) {
     const followers = await this.followerRepo.getFollowers(userId);
     const followerLoginMap = await this.followerRepo.listLastLoginDays(
       followers
@@ -76,7 +76,7 @@ class TwitterTimelineFacade {
       );
     } else {
       // fan-out
-      const followers = await this.#getFollowers(authorId);
+      const followers = await this.#getActiveFollowers(authorId);
       followers.forEach(
         async (follower) =>
           await this.recommendationRepo.appendRecommendation(
@@ -100,6 +100,19 @@ class TwitterTimelineFacade {
     const fromOwned = await this.recommendationRepo.getRecommendations(userId);
     const fromCelebrities = await this.recommendationRepo.getPosts(celebrities);
     return this.#assembleTimeline(fromOwned, fromCelebrities);
+  }
+
+  async deletePost(userId, postId) {
+    if (await this.#isCelebrity(userId)) {
+      // single update
+      await this.recommendationRepo.deletePost(userId, postId);
+    } else {
+      const followers = await this.followerRepo.getFollowers(userId);
+      followers.forEach(
+        async (follower) =>
+          await this.recommendationRepo.deleteRecommendation(follower, postId)
+      );
+    }
   }
 }
 
