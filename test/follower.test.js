@@ -17,8 +17,8 @@ before(() => {
   });
 });
 
-after(() => {
-  this.redis.disconnect();
+after(async () => {
+  await this.redis.disconnect();
 });
 
 describe("timeline.repo.follower.testsuite", () => {
