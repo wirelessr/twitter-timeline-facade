@@ -229,14 +229,14 @@ describe("timeline.testsuite", () => {
     // normal user
     const postId2 = faker.datatype.uuid();
     await timeline.post(2, postId2);
-    expect(recommendationRepo.db.post[2]).to.be.undefined;
+    expect(recommendationRepo.db.post[2]).to.deep.equal([postId2]);
     expect(recommendationRepo.db.recommendation[5]).to.deep.equal([postId2]);
     expect(await timeline.retrieve(5)).to.deep.equal([postId2]);
 
     // inactive user
     const postId3 = faker.datatype.uuid();
     await timeline.post(3, postId3);
-    expect(recommendationRepo.db.post[3]).to.be.undefined;
+    expect(recommendationRepo.db.post[3]).to.deep.equal([postId3]);
     expect(recommendationRepo.db.recommendation[6]).to.be.undefined;
   });
 

@@ -66,15 +66,7 @@ class TwitterTimelineFacade {
   }
 
   async post(authorId, postId, postMeta) {
-    if (await this.#isCelebrity(authorId)) {
-      // single update
-      await this.recommendationRepo.appendPost(
-        authorId,
-        postId,
-        postMeta,
-        this.#MAX_RECOMMEND_LENGTH
-      );
-    } else {
+    if (!(await this.#isCelebrity(authorId))) {
       // fan-out
       const followers = await this.#getActiveFollowers(authorId);
       followers.forEach(
@@ -87,6 +79,13 @@ class TwitterTimelineFacade {
           )
       );
     }
+    // update own post
+    await this.recommendationRepo.appendPost(
+      authorId,
+      postId,
+      postMeta,
+      this.#MAX_RECOMMEND_LENGTH
+    );
   }
 
   async retrieve(userId) {
@@ -103,16 +102,15 @@ class TwitterTimelineFacade {
   }
 
   async deletePost(userId, postId) {
-    if (await this.#isCelebrity(userId)) {
-      // single update
-      await this.recommendationRepo.deletePost(userId, postId);
-    } else {
+    if (!(await this.#isCelebrity(userId))) {
       const followers = await this.followerRepo.getFollowers(userId);
       followers.forEach(
         async (follower) =>
           await this.recommendationRepo.deleteRecommendation(follower, postId)
       );
     }
+    // delete own post
+    await this.recommendationRepo.deletePost(userId, postId);
   }
 }
 
